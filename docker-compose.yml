@@ -1,0 +1,99 @@
+# ==================================================================
+#  PulseMarket - local full-stack environment
+#
+#  This is the entry point of the NEXT phase (Docker, Phase 7).
+#  It is intentionally kept separate from local `npm run dev`:
+#
+#    npm run dev        -> API on your host + your local Postgres
+#    docker compose up  -> API + Postgres + Redis, all containerised
+#
+#  Usage:
+#    docker compose up -d --build
+#    docker compose logs -f api
+#    docker compose down            # keep data
+#    docker compose down -v         # wipe the database volume
+#
+#  After the first start, apply the schema + seed inside the container:
+#    docker compose exec api npm run db:setup
+# ==================================================================
+
+services:
+  api:
+    build:
+      context: ./backend
+    container_name: pulsemarket-api
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      CORS_ORIGIN: "*"
+      PGHOST: postgres
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: pulsemarket
+      REDIS_URL: redis://redis:6379
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-compose-access-secret-change-me}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-compose-refresh-secret-change-me}
+      JWT_ACCESS_EXPIRES_IN: 15m
+      JWT_REFRESH_EXPIRES_IN: 7d
+      BCRYPT_ROUNDS: 10
+      LOG_LEVEL: info
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:5000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    networks:
+      - pulsemarket
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: pulsemarket-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: pulsemarket
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d pulsemarket"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pulsemarket
+
+  redis:
+    image: redis:7-alpine
+    container_name: pulsemarket-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - pulsemarket
+
+volumes:
+  postgres-data:
+  redis-data:
+
+networks:
+  pulsemarket:
+    driver: bridge

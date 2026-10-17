@@ -1,0 +1,37 @@
+{
+  "expo": {
+    "name": "PulseMarket",
+    "slug": "pulsemarket",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "pulsemarket",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "backgroundColor": "#6C5CE7",
+      "resizeMode": "contain"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.pulsemarket.app"
+    },
+    "android": {
+      "package": "com.pulsemarket.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#6C5CE7"
+      }
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static"
+    },
+    "plugins": ["expo-router", "expo-secure-store"],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "apiUrl": "http://10.0.2.2:5000"
+    }
+  }
+}

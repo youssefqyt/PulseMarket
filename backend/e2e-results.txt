@@ -1,0 +1,20 @@
+
+================ E2E RESULTS ================
+PASS  login (seeded buyer)  ->  200
+PASS  GET /api/products  ->  total=12
+PASS  search products  ->  1 hit(s)
+PASS  GET /api/categories  ->  8 categories
+PASS  GET /api/products/:id  ->  iPhone 13 Pro 256GB
+PASS  cart requires auth  ->  401
+PASS  POST /api/favorites  ->  201
+PASS  GET /api/favorites  ->  3 favorite(s)
+PASS  POST /api/cart  ->  1798
+PASS  GET /api/cart  ->  total=1798
+PASS  POST /api/orders  ->  {"id":2,"total":1798,"status":"pending"}
+PASS  cart cleared after order  ->  itemCount=0
+PASS  stock decremented  ->  4 -> 2
+PASS  GET /api/orders  ->  2 order(s)
+PASS  POST /api/auth/refresh (rotation)  ->  200
+PASS  old refresh token revoked  ->  401
+PASS  POST /api/auth/register  ->  201
+17/17 checks passed
