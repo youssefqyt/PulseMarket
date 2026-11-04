@@ -15,7 +15,8 @@ async function start() {
     logger.warn("database NOT reachable - check your PostgreSQL settings in .env");
   }
 
-  const server = app.listen(config.port, () => {
+  // Bind every interface so emulators and phones on the local network can reach the API.
+  const server = app.listen(config.port, "0.0.0.0", () => {
     logger.info(`PulseMarket API running on port ${config.port}`, {
       env: config.env,
       url: `http://localhost:${config.port}`,

@@ -340,7 +340,7 @@ container and add `docker.yml` / `deploy.yml` workflows.
 | Symptom | Fix |
 |---------|-----|
 | `database NOT reachable` on start | Check PostgreSQL is running and `.env` credentials match. |
-| Mobile can't reach the API | Android emulator must use `10.0.2.2`, not `localhost`; physical phones need your PC's LAN IP and both on the same Wi‑Fi. |
+| Mobile can't reach the API | Start the backend and confirm `http://localhost:5000/health` responds on your PC. Android emulator: use `http://10.0.2.2:5000`; iOS simulator: `http://localhost:5000`; physical phone: set `EXPO_PUBLIC_API_URL` in `mobile/.env` to `http://<your-PC-LAN-IP>:5000` and keep both devices on the same Wi‑Fi. Restart Expo with `npx expo start -c` after changing `.env`. |
 | `relation "users" does not exist` | Run `npm run migrate` (or the SQL files) first. |
 | Redis warnings in the logs | Expected — Redis is optional in development. |
 | Expo dependency warnings | `npx expo install --fix`. |

@@ -1,4 +1,5 @@
 import Constants from "expo-constants";
+import { Platform } from "react-native";
 import {
   getAccessToken,
   getRefreshToken,
@@ -9,12 +10,13 @@ import type { ApiEnvelope } from "../types";
 
 /**
  * Resolve the API base URL.
- * Priority: EXPO_PUBLIC_API_URL  ->  app.json extra.apiUrl  ->  localhost.
+ * Priority: EXPO_PUBLIC_API_URL -> platform default.
+ * Android emulators use 10.0.2.2 to reach the host; iOS simulators use localhost.
+ * Physical devices should set EXPO_PUBLIC_API_URL to the host machine's LAN IP.
  */
 export const API_URL: string =
   process.env.EXPO_PUBLIC_API_URL ||
-  (Constants.expoConfig?.extra as { apiUrl?: string } | undefined)?.apiUrl ||
-  "http://localhost:5000";
+  (Platform.OS === "android" ? "http://10.0.2.2:5000" : "http://localhost:5000");
 
 export class ApiError extends Error {
   status: number;
