@@ -23,8 +23,9 @@ listings and inspect audit and sales activity. The project is deliberately built
 pipeline → observability) is designed to be deployed and monitored, not just
 demoed on `localhost`.
 
-> **Status:** Phases 1–6 complete (Database + Backend + Mobile).
-> Containerisation (Docker), CI/CD, deployment, monitoring and scaling follow.
+> **Status:** Core marketplace features are implemented. The `MangedHosts`
+> branch prepares the backend for Render + Neon and optional Grafana Cloud
+> telemetry; actual cloud deployment still requires account credentials.
 
 ---
 
@@ -47,8 +48,9 @@ demoed on `localhost`.
               │ (primary)  │   │  (cache)     │
               └────────────┘   └──────────────┘
 
-  Observability (available now, wired up in the monitoring phase):
+  Observability:
       /health   liveness        /ready   readiness        /metrics   Prometheus
+      OTLP metrics + JSON logs -> optional Grafana Cloud integration
 ```
 
 ---
@@ -165,7 +167,7 @@ PulseMarket/
 
 ### Prerequisites
 
-- **Node.js 20+** (22 recommended) and npm
+- **Node.js 20.6+** (22 recommended) and npm
 - **PostgreSQL 14+** running locally
 - **Redis** (optional in development)
 - **Expo Go** on your phone, or an Android/iOS emulator
@@ -400,18 +402,40 @@ credentials/webhook secret and Cloudinary account.
 | 4     | PostgreSQL schema, migration & seed                          | ✅ |
 | 5     | Authentication (JWT + refresh rotation)                      | ✅ |
 | 6     | Products, cart, orders, favorites                            | ✅ |
-| 7     | **Docker + Docker Compose**                                  | ⏭️ next |
+| 7     | **Docker + Docker Compose**                                  | 🟡 local practice |
 | 8     | GitHub Actions CI                                            | 🟡 base workflow included |
 | 9     | Container registry (GHCR)                                    | ⏳ |
-| 10    | Cloud deployment (Render / Oracle Cloud)                     | ⏳ |
+| 10    | Cloud deployment (Render API / Neon PostgreSQL)              | 🟡 blueprint included; deploy pending |
 | 11    | HTTPS + Nginx reverse proxy                                  | ⏳ |
-| 12-14 | Prometheus · Grafana · Loki                                  | ⏳ |
+| 12-14 | Prometheus · Grafana · Loki / Grafana Cloud OTLP              | 🟡 optional OTLP export included |
 | 15-16 | k6 load testing · horizontal scaling                         | ⏳ |
 | 17    | Mobile CI/CD (EAS Build)                                     | ⏳ |
 
-**Next phase (Docker):** `docker compose up -d --build`, then
-`docker compose exec api npm run db:setup`, then point the mobile app at the
-container and add `docker.yml` / `deploy.yml` workflows.
+### Managed-host backend setup (Render + Neon)
+
+1. Create a PostgreSQL project in Neon and copy its **pooled** connection
+   string. Use the `DATABASE_URL` value with `sslmode=require`.
+2. Push this branch to GitHub and create a Render Blueprint from the repository.
+   Render reads [`render.yaml`](./render.yaml) to build the API from `backend/`.
+   Keep the root directory at the repository root so the `database/` SQL files
+   remain available to migration commands.
+3. Configure `DATABASE_URL` and generated JWT secrets in Render. Add Stripe,
+   Cloudinary, and `REDIS_URL` only when those integrations are configured.
+   Redis is optional; the production API no longer tries localhost when no
+   hosted Redis URL is provided.
+4. After the API service is created, run `npm --prefix backend run migrate`
+   once from the Render Shell. Do not run the demo seed against production.
+   Render's health check uses `/ready`; verify `/health` and `/ready` after
+   deployment.
+5. To send metrics and logs to Grafana Cloud, create an OTLP access token and
+   add `OTEL_EXPORTER_OTLP_ENDPOINT` and `OTEL_EXPORTER_OTLP_HEADERS` as secret
+   environment variables in Render. The endpoint must end in `/otlp`; the
+   header should contain the Grafana Cloud instance ID and token encoded as
+   HTTP Basic auth. See [`monitoring/README.md`](./monitoring/README.md).
+
+Render's built-in logs work without Grafana credentials. `/metrics` exposes
+Prometheus text format; Grafana Cloud OTLP export is the managed-hosting path
+for both metrics and structured logs. Keep provider credentials out of Git.
 
 ---
 

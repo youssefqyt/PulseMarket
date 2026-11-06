@@ -1,3 +1,4 @@
+const telemetry = require("./config/telemetry");
 const app = require("./app");
 const config = require("./config");
 const logger = require("./config/logger");
@@ -33,6 +34,7 @@ async function start() {
     server.close(async () => {
       await redis.closeRedis();
       await pool.end();
+      await telemetry.shutdown();
       logger.info("shutdown complete");
       process.exit(0);
     });

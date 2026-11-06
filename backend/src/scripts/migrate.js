@@ -17,6 +17,11 @@ function readSql(name) {
 }
 
 async function ensureDatabase() {
+  if (config.db.connectionString) {
+    console.log("[migrate] using the configured DATABASE_URL database");
+    return;
+  }
+
   const client = new Client({
     host: config.db.host,
     port: config.db.port,

@@ -15,6 +15,10 @@ let connected = false;
 const CONNECT_TIMEOUT_MS = 3000;
 
 async function initRedis() {
+  if (!config.redis.url) {
+    console.log("[redis] not configured, continuing without cache");
+    return null;
+  }
   if (client) return client;
 
   client = createClient({
