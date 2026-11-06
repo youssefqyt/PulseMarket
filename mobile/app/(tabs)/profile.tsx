@@ -1,4 +1,5 @@
-import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { useState } from "react";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import Screen from "../../components/Screen";
@@ -6,13 +7,25 @@ import { colors, radius, shadow, spacing, typography } from "../../constants/the
 import { useAuthStore } from "../../store/authStore";
 import { useCartStore } from "../../store/cartStore";
 import { useFavoritesStore } from "../../store/favoritesStore";
+import { useNotificationStore } from "../../store/notificationStore";
+import { useSettingsStore } from "../../store/settingsStore";
 
-const MENU = [
+const CUSTOMER_MENU = [
   { icon: "receipt-outline", label: "My orders", route: "/orders" },
-  { icon: "storefront-outline", label: "My products", route: "/(tabs)" },
   { icon: "heart-outline", label: "Favorites", route: "/(tabs)/favorites" },
-  { icon: "settings-outline", label: "Settings", route: "/(tabs)/profile" },
+  { icon: "notifications-outline", label: "Notifications", route: "/notifications" },
+  { icon: "settings-outline", label: "Settings & Preferences", route: "/settings" },
 ] as const;
+const SELLER_MENU_ITEM = {
+  icon: "storefront-outline",
+  label: "Seller workspace",
+  route: "/seller-dashboard",
+} as const;
+const ADMIN_MENU_ITEM = {
+  icon: "shield-checkmark-outline",
+  label: "Admin workspace",
+  route: "/admin",
+} as const;
 
 export default function Profile() {
   const router = useRouter();
@@ -20,21 +33,50 @@ export default function Profile() {
   const signOut = useAuthStore((s) => s.signOut);
   const resetCart = useCartStore((s) => s.reset);
   const resetFavorites = useFavoritesStore((s) => s.reset);
+  const resetNotifications = useNotificationStore((s) => s.reset);
+  const resetSettings = useSettingsStore((s) => s.reset);
+  const unreadCount = useNotificationStore((s) => s.unreadCount);
+  const [loggingOut, setLoggingOut] = useState(false);
+  const menu = [
+    ...(user?.role === "seller" || user?.role === "admin" ? [SELLER_MENU_ITEM] : []),
+    ...(user?.role === "admin" ? [ADMIN_MENU_ITEM] : []),
+    ...CUSTOMER_MENU,
+  ];
 
   function onLogout() {
+    if (loggingOut) return;
+    if (Platform.OS === "web") {
+      if (typeof window !== "undefined" && !window.confirm("Are you sure you want to log out?")) return;
+      void performLogout();
+      return;
+    }
+
     Alert.alert("Log out", "Are you sure you want to log out?", [
       { text: "Cancel", style: "cancel" },
       {
         text: "Log out",
         style: "destructive",
-        onPress: async () => {
-          await signOut();
-          resetCart();
-          resetFavorites();
-          router.replace("/login");
-        },
+        onPress: () => void performLogout(),
       },
     ]);
+  }
+
+  async function performLogout() {
+    if (loggingOut) return;
+    setLoggingOut(true);
+    try {
+      await signOut();
+    } catch (error) {
+      console.error("Local sign-out failed", error);
+    } finally {
+      resetCart();
+      resetFavorites();
+      resetNotifications();
+      void resetSettings().catch((error: Error) => {
+        console.error("Could not clear saved settings during sign-out", error);
+      });
+      router.replace("/login");
+    }
   }
 
   const initials = (user?.name ?? "?")
@@ -62,27 +104,36 @@ export default function Profile() {
       </View>
 
       <View style={styles.menu}>
-        {MENU.map((item, idx) => (
+        {menu.map((item, idx) => (
           <Pressable
             key={item.label}
-            style={[styles.menuItem, idx < MENU.length - 1 && styles.menuDivider]}
+            style={[styles.menuItem, idx < menu.length - 1 && styles.menuDivider]}
             onPress={() => router.push(item.route as never)}
           >
             <View style={styles.menuIcon}>
               <Ionicons name={item.icon} size={20} color={colors.primary} />
             </View>
             <Text style={styles.menuLabel}>{item.label}</Text>
+            {item.route === "/notifications" && unreadCount > 0 ? (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{unreadCount > 99 ? "99+" : unreadCount}</Text>
+              </View>
+            ) : null}
             <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
           </Pressable>
         ))}
       </View>
 
-      <Pressable style={styles.logout} onPress={onLogout}>
+      <Pressable
+        style={[styles.logout, loggingOut && styles.logoutDisabled]}
+        onPress={onLogout}
+        disabled={loggingOut}
+      >
         <Ionicons name="log-out-outline" size={20} color={colors.danger} />
-        <Text style={styles.logoutText}>Log out</Text>
+        <Text style={styles.logoutText}>{loggingOut ? "Logging out…" : "Log out"}</Text>
       </Pressable>
 
-      <Text style={styles.version}>PulseMarket v1.0.0</Text>
+      <Text style={styles.version}>PulseMarket v1.2.0 • Online Marketplace</Text>
     </Screen>
   );
 }
@@ -140,6 +191,17 @@ const styles = StyleSheet.create({
     marginRight: spacing.md,
   },
   menuLabel: { flex: 1, ...typography.bodyStrong, color: colors.text },
+  badge: {
+    backgroundColor: colors.primary,
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 5,
+    marginRight: 6,
+  },
+  badgeText: { color: colors.white, fontSize: 11, fontWeight: "700" },
   logout: {
     flexDirection: "row",
     alignItems: "center",
@@ -150,5 +212,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFE9E9",
   },
   logoutText: { color: colors.danger, fontWeight: "700", marginLeft: spacing.sm },
+  logoutDisabled: { opacity: 0.6 },
   version: { textAlign: "center", color: colors.textMuted, fontSize: 12, marginTop: spacing.xl },
 });

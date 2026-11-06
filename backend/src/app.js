@@ -11,6 +11,7 @@ const { metricsMiddleware, render: renderMetrics } = require("./config/metrics")
 const { apiLimiter } = require("./middleware/rateLimiter");
 const { notFound, errorHandler } = require("./middleware/common");
 const routes = require("./routes");
+const paymentController = require("./controllers/payment.controller");
 
 const app = express();
 
@@ -21,6 +22,12 @@ app.use(
     origin: config.corsOrigin === "*" ? "*" : config.corsOrigin.split(","),
     credentials: true,
   })
+);
+app.post(
+  "/api/payments/webhook",
+  apiLimiter,
+  express.raw({ type: "application/json", limit: "1mb" }),
+  paymentController.webhook
 );
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true }));

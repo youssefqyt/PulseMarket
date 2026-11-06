@@ -28,4 +28,22 @@ async function exists(userId, productId) {
   return rows.length > 0;
 }
 
-module.exports = { add, remove, exists };
+async function createShare(userId) {
+  const { rows } = await query(
+    `INSERT INTO favorite_shares (user_id) VALUES ($1) RETURNING share_token, expires_at`,
+    [userId]
+  );
+  return { token: rows[0].share_token, expiresAt: rows[0].expires_at };
+}
+
+async function findShare(token) {
+  const { rows } = await query(
+    `SELECT fs.user_id, u.name FROM favorite_shares fs
+       JOIN users u ON u.id = fs.user_id
+      WHERE fs.share_token = $1 AND fs.expires_at > now()`,
+    [token]
+  );
+  return rows[0] || null;
+}
+
+module.exports = { add, remove, exists, createShare, findShare };

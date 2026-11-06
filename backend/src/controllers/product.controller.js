@@ -1,9 +1,20 @@
 const asyncHandler = require("../utils/asyncHandler");
 const productService = require("../services/product.service");
+const imageController = require("./image.controller");
 
 const list = asyncHandler(async (req, res) => {
   const result = await productService.list(req.query);
   res.json({ success: true, data: result });
+});
+
+const listMine = asyncHandler(async (req, res) => {
+  const products = await productService.listMine(req.user.id);
+  res.json({ success: true, data: products });
+});
+
+const suggest = asyncHandler(async (req, res) => {
+  const suggestions = await productService.suggest(req.query.q, req.query.limit);
+  res.json({ success: true, data: suggestions });
 });
 
 const getById = asyncHandler(async (req, res) => {
@@ -26,4 +37,14 @@ const remove = asyncHandler(async (req, res) => {
   res.json({ success: true, data: result });
 });
 
-module.exports = { list, getById, create, update, remove };
+module.exports = {
+  list,
+  listMine,
+  suggest,
+  getById,
+  create,
+  update,
+  remove,
+  uploadImages: imageController.uploadProductImages,
+  deleteImage: imageController.deleteProductImage,
+};

@@ -12,7 +12,12 @@ const tokenRepo = require("../repositories/refreshToken.repository");
 
 /** Build the access + refresh token pair and persist the refresh hash. */
 async function issueTokens(user) {
-  const payload = { sub: user.id, email: user.email, role: user.role };
+  const payload = {
+    sub: user.id,
+    email: user.email,
+    role: user.role,
+    sellerStatus: user.seller_status || "approved",
+  };
   const accessToken = signAccessToken(payload);
   const refreshToken = signRefreshToken(payload);
 
@@ -38,6 +43,7 @@ async function login({ email, password }) {
   const user = await userRepo.findByEmail(email);
   // Same generic message whether the email or the password is wrong.
   if (!user) throw ApiError.unauthorized("Invalid email or password");
+  if (user.is_suspended) throw ApiError.forbidden("This account is suspended");
 
   const ok = await verifyPassword(password, user.password_hash);
   if (!ok) throw ApiError.unauthorized("Invalid email or password");
@@ -60,6 +66,7 @@ async function refresh(refreshToken) {
 
   const user = await userRepo.findById(decoded.sub);
   if (!user) throw ApiError.unauthorized("User no longer exists");
+  if (user.is_suspended) throw ApiError.forbidden("This account is suspended");
 
   await tokenRepo.revoke(hashToken(refreshToken)); // rotate
   const tokens = await issueTokens(user);
@@ -76,4 +83,31 @@ async function me(userId) {
   return mapUser(user);
 }
 
-module.exports = { register, login, refresh, logout, me };
+async function updateProfile(userId, { name, avatarUrl }) {
+  const user = await userRepo.updateProfile(userId, { name, avatarUrl });
+  if (!user) throw ApiError.notFound("User not found");
+  return mapUser(user);
+}
+
+async function changePassword(userId, { currentPassword, newPassword }) {
+  const user = await userRepo.findById(userId);
+  if (!user) throw ApiError.notFound("User not found");
+
+  const fullUser = await userRepo.findByEmail(user.email);
+  const ok = await verifyPassword(currentPassword, fullUser.password_hash);
+  if (!ok) throw ApiError.badRequest("Current password is incorrect");
+
+  const newHash = await hashPassword(newPassword);
+  await userRepo.updatePassword(userId, newHash);
+  return { message: "Password updated successfully" };
+}
+
+module.exports = {
+  register,
+  login,
+  refresh,
+  logout,
+  me,
+  updateProfile,
+  changePassword,
+};

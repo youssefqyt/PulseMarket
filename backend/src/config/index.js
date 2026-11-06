@@ -40,6 +40,19 @@ const config = {
     url: process.env.REDIS_URL || "redis://localhost:6379",
   },
 
+  stripe: {
+    secretKey: process.env.STRIPE_SECRET_KEY || "",
+    webhookSecret: process.env.STRIPE_WEBHOOK_SECRET || "",
+    successUrl: process.env.STRIPE_SUCCESS_URL || "pulsemarket://payment-result?result=success&session_id={CHECKOUT_SESSION_ID}",
+    cancelUrl: process.env.STRIPE_CANCEL_URL || "pulsemarket://payment-result?result=cancelled",
+  },
+
+  cloudinary: {
+    cloudName: process.env.CLOUDINARY_CLOUD_NAME || "",
+    apiKey: process.env.CLOUDINARY_API_KEY || "",
+    apiSecret: process.env.CLOUDINARY_API_SECRET || "",
+  },
+
   jwt: {
     accessSecret: required("JWT_ACCESS_SECRET", "dev-access-secret"),
     refreshSecret: required("JWT_REFRESH_SECRET", "dev-refresh-secret"),

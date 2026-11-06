@@ -32,15 +32,36 @@ export async function fetchMe(): Promise<User> {
   return apiRequest<User>("/api/auth/me", { auth: true });
 }
 
+export async function updateProfile(input: {
+  name?: string;
+  avatarUrl?: string | null;
+}): Promise<User> {
+  return apiRequest<User>("/api/auth/profile", {
+    method: "PATCH",
+    auth: true,
+    body: JSON.stringify(input),
+  });
+}
+
+export async function changePassword(input: {
+  currentPassword: string;
+  newPassword: string;
+}): Promise<{ message: string }> {
+  return apiRequest<{ message: string }>("/api/auth/change-password", {
+    method: "POST",
+    auth: true,
+    body: JSON.stringify(input),
+  });
+}
+
 export async function logout(refreshToken: string | null): Promise<void> {
-  try {
-    await apiRequest("/api/auth/logout", {
-      method: "POST",
-      auth: true,
-      body: JSON.stringify({ refreshToken }),
-    });
-  } catch {
-    /* best-effort - always clear locally */
-  }
   await clearTokens();
+
+  if (refreshToken) {
+    void apiRequest("/api/auth/logout", {
+      method: "POST",
+      auth: false,
+      body: JSON.stringify({ refreshToken }),
+    }).catch(() => undefined);
+  }
 }

@@ -7,6 +7,8 @@ const {
   registerSchema,
   loginSchema,
   refreshSchema,
+  updateProfileSchema,
+  changePasswordSchema,
 } = require("../validators/auth.validator");
 
 const router = Router();
@@ -16,5 +18,7 @@ router.post("/login", authLimiter, validate(loginSchema), controller.login);
 router.post("/refresh", validate(refreshSchema), controller.refresh);
 router.post("/logout", validate(refreshSchema.partial()), controller.logout);
 router.get("/me", requireAuth, controller.me);
+router.patch("/profile", requireAuth, validate(updateProfileSchema), controller.updateProfile);
+router.post("/change-password", requireAuth, validate(changePasswordSchema), controller.changePassword);
 
 module.exports = router;

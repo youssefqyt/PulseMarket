@@ -11,6 +11,9 @@ const updateCartSchema = z.object({
 
 const createOrderSchema = z.object({
   shippingAddress: z.string().trim().min(5, "Shipping address is required").max(500),
+  paymentMethod: z.enum(["card", "cash"]).optional(),
+  phone: z.string().max(40).optional(),
+  deliveryNotes: z.string().max(500).optional(),
   // Optional: order specific items directly instead of the whole cart.
   items: z
     .array(
@@ -22,13 +25,8 @@ const createOrderSchema = z.object({
     .optional(),
 });
 
-const updateOrderStatusSchema = z.object({
-  status: z.enum(["pending", "paid", "shipped", "completed", "cancelled"]),
-});
-
 module.exports = {
   addToCartSchema,
   updateCartSchema,
   createOrderSchema,
-  updateOrderStatusSchema,
 };

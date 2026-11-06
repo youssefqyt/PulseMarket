@@ -1,9 +1,14 @@
 import { apiRequest } from "./api";
-import type { Order, Paginated } from "../types";
+import type { Order, Paginated, PaymentMethod } from "../types";
 
-export async function createOrder(input: {
+export interface CreateOrderInput {
   shippingAddress: string;
-}): Promise<Order> {
+  paymentMethod?: PaymentMethod;
+  phone?: string;
+  deliveryNotes?: string;
+}
+
+export async function createOrder(input: CreateOrderInput): Promise<Order> {
   return apiRequest<Order>("/api/orders", {
     method: "POST",
     auth: true,

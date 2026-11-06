@@ -10,6 +10,7 @@ function mapUser(row) {
     name: row.name,
     email: row.email,
     role: row.role,
+    sellerStatus: row.seller_status || (row.role === "seller" ? "approved" : undefined),
     avatarUrl: row.avatar_url,
     createdAt: row.created_at,
   };
@@ -30,7 +31,14 @@ function mapProduct(row) {
     description: row.description,
     price: row.price !== undefined ? Number(row.price) : undefined,
     imageUrl: row.image_url,
+    imageUrls: row.image_urls || (row.image_url ? [row.image_url] : []),
+    images: (row.images || []).map((image) => ({
+      id: image.id,
+      url: image.url,
+      sortOrder: image.sortOrder,
+    })),
     stock: row.stock,
+    lowStockThreshold: row.low_stock_threshold ?? 5,
     isActive: row.is_active,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -39,6 +47,8 @@ function mapProduct(row) {
     categorySlug: row.category_slug,
     sellerName: row.seller_name,
     isFavorite: row.is_favorite,
+    reviewCount: row.review_count || 0,
+    averageRating: row.average_rating === undefined ? null : Number(row.average_rating),
   };
 }
 
@@ -63,10 +73,21 @@ function mapOrder(row, items = []) {
     id: row.id,
     buyerId: row.buyer_id,
     status: row.status,
+    paymentMethod: row.payment_method || "card",
+    paymentStatus: row.payment_status || "unpaid",
     total: Number(row.total),
     shippingAddress: row.shipping_address,
+    phone: row.phone || null,
+    deliveryNotes: row.delivery_notes || null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    estimatedDeliveryAt: row.estimated_delivery_at,
+    trackingNumber: row.tracking_number,
+    carrier: row.carrier,
+    buyerName: row.buyer_name,
+    buyerEmail: row.buyer_email,
+    statusHistory: row.status_history,
+    fulfillments: row.fulfillments,
     items,
   };
 }

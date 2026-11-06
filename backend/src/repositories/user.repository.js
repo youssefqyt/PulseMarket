@@ -1,10 +1,10 @@
 const { query } = require("../config/db");
 
-const PUBLIC_COLUMNS = "id, name, email, role, avatar_url, created_at";
+const PUBLIC_COLUMNS = "id, name, email, role, avatar_url, seller_status, is_suspended, created_at";
 
 async function findByEmail(email) {
   const { rows } = await query(
-    `SELECT id, name, email, role, avatar_url, created_at, password_hash
+    `SELECT id, name, email, role, avatar_url, seller_status, is_suspended, created_at, password_hash
        FROM users WHERE email = $1`,
     [email]
   );
@@ -14,6 +14,15 @@ async function findByEmail(email) {
 async function findById(id) {
   const { rows } = await query(
     `SELECT ${PUBLIC_COLUMNS} FROM users WHERE id = $1`,
+    [id]
+  );
+  return rows[0] || null;
+}
+
+async function findAuthState(id) {
+  const { rows } = await query(
+    `SELECT id, name, email, role, seller_status, is_suspended
+       FROM users WHERE id = $1`,
     [id]
   );
   return rows[0] || null;
@@ -45,4 +54,4 @@ async function updatePassword(id, passwordHash) {
   await query(`UPDATE users SET password_hash = $2 WHERE id = $1`, [id, passwordHash]);
 }
 
-module.exports = { findByEmail, findById, create, updateProfile, updatePassword };
+module.exports = { findByEmail, findById, findAuthState, create, updateProfile, updatePassword };

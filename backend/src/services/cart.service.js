@@ -14,6 +14,9 @@ async function getCart(userId) {
 async function addItem(userId, productId, quantity) {
   const product = await productRepo.findById(productId);
   if (!product) throw ApiError.notFound("Product not found");
+  if (product.seller_is_suspended || product.seller_status !== "approved") {
+    throw ApiError.badRequest("Product is not available");
+  }
   if (!product.is_active) throw ApiError.badRequest("Product is not available");
   if (product.stock < quantity) throw ApiError.badRequest("Not enough stock");
 
@@ -24,6 +27,9 @@ async function addItem(userId, productId, quantity) {
 async function updateItem(userId, productId, quantity) {
   const product = await productRepo.findById(productId);
   if (!product) throw ApiError.notFound("Product not found");
+  if (product.seller_is_suspended || product.seller_status !== "approved") {
+    throw ApiError.badRequest("Product is not available");
+  }
   if (product.stock < quantity) throw ApiError.badRequest("Not enough stock");
 
   const updated = await cartRepo.updateQuantity(userId, productId, quantity);

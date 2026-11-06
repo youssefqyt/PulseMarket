@@ -1,12 +1,14 @@
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { colors, formatPrice, radius, shadow, spacing, typography } from "../constants/theme";
+import { useSettingsStore } from "../store/settingsStore";
 import type { Product } from "../types";
 
 interface Props {
   product: Product;
   onPress: () => void;
   onToggleFavorite?: () => void;
+  onAddToCart?: () => void;
   isFavorite?: boolean;
   width?: number | string;
 }
@@ -15,9 +17,12 @@ export default function ProductCard({
   product,
   onPress,
   onToggleFavorite,
+  onAddToCart,
   isFavorite,
   width,
 }: Props) {
+  const formatCurrency = useSettingsStore((s) => s.formatCurrency);
+
   return (
     <Pressable
       onPress={onPress}
@@ -58,7 +63,23 @@ export default function ProductCard({
         <Text style={styles.title} numberOfLines={2}>
           {product.title}
         </Text>
-        <Text style={styles.price}>{formatPrice(product.price)}</Text>
+        <View style={styles.footerRow}>
+          <Text style={styles.price}>
+            {formatCurrency ? formatCurrency(product.price) : formatPrice(product.price)}
+          </Text>
+          {onAddToCart && product.stock > 0 ? (
+            <Pressable
+              onPress={(e) => {
+                e.stopPropagation();
+                onAddToCart();
+              }}
+              style={styles.addBtn}
+              hitSlop={6}
+            >
+              <Ionicons name="add" size={18} color={colors.white} />
+            </Pressable>
+          ) : null}
+        </View>
       </View>
     </Pressable>
   );
@@ -97,5 +118,20 @@ const styles = StyleSheet.create({
   body: { padding: spacing.md },
   category: { ...typography.tiny, color: colors.primary, textTransform: "uppercase" },
   title: { ...typography.bodyStrong, color: colors.text, marginTop: 2, minHeight: 40 },
-  price: { ...typography.h3, color: colors.text, marginTop: spacing.sm },
+  footerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: spacing.sm,
+  },
+  price: { ...typography.h3, color: colors.text },
+  addBtn: {
+    backgroundColor: colors.primary,
+    borderRadius: radius.pill,
+    width: 28,
+    height: 28,
+    alignItems: "center",
+    justifyContent: "center",
+    ...shadow.soft,
+  },
 });

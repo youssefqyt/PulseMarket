@@ -22,4 +22,20 @@ const refreshSchema = z.object({
   refreshToken: z.string().min(1, "refreshToken is required"),
 });
 
-module.exports = { registerSchema, loginSchema, refreshSchema };
+const updateProfileSchema = z.object({
+  name: z.string().trim().min(2, "Name is too short").max(120).optional(),
+  avatarUrl: z.string().url("Must be a valid URL").optional().nullable(),
+});
+
+const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, "Current password is required"),
+  newPassword: password,
+});
+
+module.exports = {
+  registerSchema,
+  loginSchema,
+  refreshSchema,
+  updateProfileSchema,
+  changePasswordSchema,
+};

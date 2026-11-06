@@ -1,10 +1,19 @@
+import { useEffect } from "react";
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { colors } from "../../constants/theme";
 import { useCartStore } from "../../store/cartStore";
+import { useNotificationStore } from "../../store/notificationStore";
 
 export default function TabsLayout() {
   const itemCount = useCartStore((s) => s.cart.itemCount);
+  const unreadCount = useNotificationStore((s) => s.unreadCount);
+  const refreshNotifications = useNotificationStore((s) => s.refresh);
+
+  // Fetch notification count once on mount so the badge appears immediately
+  useEffect(() => {
+    refreshNotifications();
+  }, [refreshNotifications]);
 
   return (
     <Tabs
@@ -26,6 +35,7 @@ export default function TabsLayout() {
         name="index"
         options={{
           title: "Home",
+          tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
           tabBarIcon: ({ color, size }) => <Ionicons name="home" size={size} color={color} />,
         }}
       />

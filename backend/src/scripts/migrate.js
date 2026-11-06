@@ -1,5 +1,5 @@
 /**
- * Creates the database (if missing) and applies 01_migration.sql.
+ * Creates the database (if missing) and applies the baseline and marketplace migrations.
  *
  *   npm run migrate
  *
@@ -62,6 +62,21 @@ async function applyMigration() {
   try {
     await ensureDatabase();
     await applyMigration();
+    const client = new Client(
+      config.db.connectionString
+        ? { connectionString: config.db.connectionString }
+        : {
+            host: config.db.host,
+            port: config.db.port,
+            user: config.db.user,
+            password: config.db.password,
+            database: config.db.database,
+          }
+    );
+    await client.connect();
+    console.log("[migrate] applying 04_marketplace_expansion.sql ...");
+    await client.query(readSql("04_marketplace_expansion.sql"));
+    await client.end();
     process.exit(0);
   } catch (err) {
     console.error("[migrate] FAILED:", err.message);

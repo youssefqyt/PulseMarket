@@ -19,6 +19,7 @@ export default function Home() {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
   const loadCart = useCartStore((s) => s.load);
+  const addToCart = useCartStore((s) => s.add);
   const loadFavorites = useFavoritesStore((s) => s.load);
   const favoriteIds = useFavoritesStore((s) => s.ids);
   const toggleFavorite = useFavoritesStore((s) => s.toggle);
@@ -56,7 +57,7 @@ export default function Home() {
                 <Text style={styles.greeting}>Hello, {user?.name?.split(" ")[0] ?? "there"} 👋</Text>
                 <Text style={styles.headline}>Find something great</Text>
               </View>
-              <Pressable style={styles.iconBtn} onPress={() => router.push("/orders")}>
+              <Pressable style={styles.iconBtn} onPress={() => router.push("/notifications")}>
                 <Ionicons name="notifications-outline" size={22} color={colors.text} />
               </Pressable>
             </View>
@@ -99,6 +100,7 @@ export default function Home() {
             width="48%"
             isFavorite={favoriteIds.has(item.id)}
             onToggleFavorite={() => toggleFavorite(item.id)}
+            onAddToCart={() => addToCart(item.id, 1)}
             onPress={() => router.push(`/product/${item.id}`)}
           />
         )}

@@ -69,6 +69,10 @@ export const shadow = {
 } as const;
 
 /** Format a number as currency. */
-export function formatPrice(value: number): string {
-  return `$${Number(value).toFixed(2)}`;
+export function formatPrice(value: number, symbol = "$"): string {
+  const num = Number(value || 0).toFixed(2);
+  if (symbol === "DT" || symbol === "TND") {
+    return `${num} DT`;
+  }
+  return `${symbol}${num}`;
 }

@@ -16,13 +16,4 @@ const getById = asyncHandler(async (req, res) => {
   res.json({ success: true, data: order });
 });
 
-const updateStatus = asyncHandler(async (req, res) => {
-  const order = await orderService.updateStatus(
-    Number(req.params.id),
-    req.body.status,
-    req.user
-  );
-  res.json({ success: true, data: order });
-});
-
-module.exports = { create, list, getById, updateStatus };
+module.exports = { create, list, getById };

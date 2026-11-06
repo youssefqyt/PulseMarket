@@ -14,59 +14,89 @@ interface AuthState {
   signUp: (name: string, email: string, password: string, role?: "user" | "seller") => Promise<void>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  updateUser: (name?: string, avatarUrl?: string | null) => Promise<User>;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => {
+  let sessionVersion = 0;
+
+  return {
   user: null,
   status: "loading",
   error: null,
 
   /** Called once on app start: restore tokens and fetch the current user. */
   initialize: async () => {
+    const version = ++sessionVersion;
     await hydrateTokens();
+    if (version !== sessionVersion) return;
     try {
       const user = await authService.fetchMe();
-      set({ user, status: "authenticated" });
+      if (version === sessionVersion) set({ user, status: "authenticated" });
     } catch {
-      await clearTokens();
-      set({ user: null, status: "guest" });
+      if (version === sessionVersion) {
+        await clearTokens();
+        set({ user: null, status: "guest" });
+      }
     }
   },
 
   signIn: async (email, password) => {
+    const version = ++sessionVersion;
     set({ error: null });
     try {
       const { user } = await authService.login({ email, password });
-      set({ user, status: "authenticated" });
+      if (version === sessionVersion) set({ user, status: "authenticated" });
     } catch (err) {
-      set({ error: (err as Error).message });
+      if (version === sessionVersion) set({ error: (err as Error).message });
       throw err;
     }
   },
 
   signUp: async (name, email, password, role) => {
+    const version = ++sessionVersion;
     set({ error: null });
     try {
       const { user } = await authService.register({ name, email, password, role });
-      set({ user, status: "authenticated" });
+      if (version === sessionVersion) set({ user, status: "authenticated" });
     } catch (err) {
-      set({ error: (err as Error).message });
+      if (version === sessionVersion) set({ error: (err as Error).message });
       throw err;
     }
   },
 
   signOut: async () => {
-    await authService.logout(getRefreshToken());
+    const refreshToken = getRefreshToken();
+    sessionVersion += 1;
     set({ user: null, status: "guest", error: null });
+    try {
+      await authService.logout(refreshToken);
+    } finally {
+      await clearTokens();
+      set({ user: null, status: "guest", error: null });
+    }
   },
 
   refreshProfile: async () => {
+    const version = sessionVersion;
+    if (get().status !== "authenticated") return;
     try {
       const user = await authService.fetchMe();
-      set({ user, status: "authenticated" });
+      if (version === sessionVersion && get().status === "authenticated") {
+        set({ user, status: "authenticated" });
+      }
     } catch {
-      await clearTokens();
-      set({ user: null, status: "guest" });
+      if (version === sessionVersion && get().status === "authenticated") {
+        await clearTokens();
+        set({ user: null, status: "guest" });
+      }
     }
   },
-}));
+
+  updateUser: async (name?: string, avatarUrl?: string | null) => {
+    const updated = await authService.updateProfile({ name, avatarUrl });
+    set({ user: updated });
+    return updated;
+  },
+  };
+});

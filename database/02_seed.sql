@@ -30,15 +30,18 @@ ON CONFLICT (slug) DO NOTHING;
 -- ------------------------------------------------------------
 --  Users
 -- ------------------------------------------------------------
-INSERT INTO users (name, email, password_hash, role)
+INSERT INTO users (name, email, password_hash, role, seller_status)
 VALUES
     ('Lina Seller', 'seller@pulsemarket.dev',
-     crypt('Password123!', gen_salt('bf', 10)), 'seller'),
+     crypt('Password123!', gen_salt('bf', 10)), 'seller', 'approved'),
     ('Karim Buyer', 'buyer@pulsemarket.dev',
-     crypt('Password123!', gen_salt('bf', 10)), 'user'),
+     crypt('Password123!', gen_salt('bf', 10)), 'user', 'pending'),
     ('Admin User',  'admin@pulsemarket.dev',
-     crypt('Password123!', gen_salt('bf', 10)), 'admin')
+     crypt('Password123!', gen_salt('bf', 10)), 'admin', 'pending')
 ON CONFLICT (email) DO NOTHING;
+UPDATE users
+   SET seller_status = 'approved'
+ WHERE email = 'seller@pulsemarket.dev' AND role = 'seller';
 
 -- ------------------------------------------------------------
 --  Products (seller = seller@pulsemarket.dev)

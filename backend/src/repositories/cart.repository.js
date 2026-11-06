@@ -1,4 +1,4 @@
-const { query } = require("../config/db");
+const { query, withTransaction } = require("../config/db");
 
 const CART_SELECT = `
   SELECT ci.id, ci.product_id, ci.quantity,
@@ -27,6 +27,20 @@ async function addOrIncrement(userId, productId, quantity) {
   return rows[0];
 }
 
+async function restoreItems(userId, items) {
+  await withTransaction(async (client) => {
+    for (const item of items) {
+      await client.query(
+        `INSERT INTO cart_items (user_id, product_id, quantity)
+         VALUES ($1, $2, $3)
+         ON CONFLICT (user_id, product_id)
+         DO UPDATE SET quantity = cart_items.quantity + EXCLUDED.quantity`,
+        [userId, item.productId, item.quantity]
+      );
+    }
+  });
+}
+
 async function updateQuantity(userId, productId, quantity) {
   const { rows } = await query(
     `UPDATE cart_items SET quantity = $3
@@ -51,4 +65,4 @@ async function clear(userId, client = null) {
   await runner.query(`DELETE FROM cart_items WHERE user_id = $1`, [userId]);
 }
 
-module.exports = { getByUser, addOrIncrement, updateQuantity, remove, clear };
+module.exports = { getByUser, addOrIncrement, restoreItems, updateQuantity, remove, clear };

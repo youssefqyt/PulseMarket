@@ -78,7 +78,9 @@ export async function apiRequest<T>(
   const { auth = false, _retried = false, headers, ...rest } = options;
 
   const finalHeaders: Record<string, string> = {
-    "Content-Type": "application/json",
+    ...(typeof FormData !== "undefined" && rest.body instanceof FormData
+      ? {}
+      : { "Content-Type": "application/json" }),
     ...(headers as Record<string, string>),
   };
 

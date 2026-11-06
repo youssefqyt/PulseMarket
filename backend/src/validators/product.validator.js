@@ -7,6 +7,7 @@ const createProductSchema = z.object({
   categoryId: z.coerce.number().int().positive().optional().nullable(),
   imageUrl: z.string().trim().url("imageUrl must be a valid URL").optional().nullable(),
   stock: z.coerce.number().int().nonnegative().default(0),
+  lowStockThreshold: z.coerce.number().int().nonnegative().max(100000).optional(),
 });
 
 const updateProductSchema = createProductSchema.partial();
@@ -19,7 +20,24 @@ const listProductsQuerySchema = z.object({
   sellerId: z.coerce.number().int().positive().optional(),
   minPrice: z.coerce.number().nonnegative().optional(),
   maxPrice: z.coerce.number().nonnegative().optional(),
-  sort: z.enum(["newest", "price_asc", "price_desc"]).optional(),
+  inStock: z.coerce.boolean().optional(),
+  sort: z.enum(["newest", "price_asc", "price_desc", "popularity", "rating"]).optional(),
 });
 
-module.exports = { createProductSchema, updateProductSchema, listProductsQuerySchema };
+const suggestQuerySchema = z.object({
+  q: z.string().trim().min(2).max(80),
+  limit: z.coerce.number().int().positive().max(10).optional(),
+});
+
+const deleteProductImageParamsSchema = z.object({
+  id: z.coerce.number().int().positive(),
+  imageId: z.coerce.number().int().positive(),
+});
+
+module.exports = {
+  createProductSchema,
+  updateProductSchema,
+  listProductsQuerySchema,
+  suggestQuerySchema,
+  deleteProductImageParamsSchema,
+};

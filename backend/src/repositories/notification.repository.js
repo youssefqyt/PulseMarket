@@ -18,6 +18,15 @@ async function markRead(userId, id) {
   return rows[0] || null;
 }
 
+async function markAllRead(userId) {
+  const { rows } = await query(
+    `UPDATE notifications SET is_read = TRUE
+      WHERE user_id = $1 RETURNING *`,
+    [userId]
+  );
+  return rows;
+}
+
 async function create(userId, title, body) {
   const { rows } = await query(
     `INSERT INTO notifications (user_id, title, body)
@@ -27,4 +36,4 @@ async function create(userId, title, body) {
   return rows[0];
 }
 
-module.exports = { listByUser, markRead, create };
+module.exports = { listByUser, markRead, markAllRead, create };

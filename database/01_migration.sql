@@ -93,13 +93,41 @@ CREATE TABLE IF NOT EXISTS orders (
     buyer_id         INTEGER       NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     status           VARCHAR(20)   NOT NULL DEFAULT 'pending'
                      CHECK (status IN ('pending', 'paid', 'shipped', 'completed', 'cancelled')),
+    payment_method   VARCHAR(50)   NOT NULL DEFAULT 'card',
     total            NUMERIC(10,2) NOT NULL DEFAULT 0 CHECK (total >= 0),
     shipping_address TEXT,
+    phone            VARCHAR(50),
+    delivery_notes   TEXT,
     created_at       TIMESTAMPTZ   NOT NULL DEFAULT now(),
     updated_at       TIMESTAMPTZ   NOT NULL DEFAULT now()
 );
 
+-- Idempotent column additions for existing installations
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_method VARCHAR(50);
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS phone VARCHAR(50);
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_notes TEXT;
+UPDATE orders SET payment_method = 'card' WHERE payment_method IS NULL;
+ALTER TABLE orders ALTER COLUMN payment_method SET DEFAULT 'card';
+ALTER TABLE orders ALTER COLUMN payment_method SET NOT NULL;
+
 CREATE INDEX IF NOT EXISTS idx_orders_buyer ON orders(buyer_id);
+
+-- ------------------------------------------------------------
+--  user_settings
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS user_settings (
+    user_id               INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    currency              VARCHAR(3)  NOT NULL DEFAULT 'USD'
+                          CHECK (currency IN ('USD', 'EUR', 'TND', 'GBP')),
+    language              VARCHAR(2)  NOT NULL DEFAULT 'en'
+                          CHECK (language IN ('en', 'fr', 'ar')),
+    push_notifications    BOOLEAN     NOT NULL DEFAULT TRUE,
+    email_notifications   BOOLEAN     NOT NULL DEFAULT TRUE,
+    sms_notifications     BOOLEAN     NOT NULL DEFAULT FALSE,
+    default_address       TEXT        NOT NULL DEFAULT '',
+    phone                 VARCHAR(50) NOT NULL DEFAULT '',
+    updated_at            TIMESTAMPTZ NOT NULL DEFAULT now()
+);
 
 -- ------------------------------------------------------------
 --  order_items
