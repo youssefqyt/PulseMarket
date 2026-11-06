@@ -2,9 +2,9 @@ const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
 const compression = require("compression");
-const morgan = require("morgan");
 
 const config = require("./config");
+const logger = require("./config/logger");
 const { healthCheck } = require("./config/db");
 const redis = require("./config/redis");
 const { metricsMiddleware, render: renderMetrics } = require("./config/metrics");
@@ -35,7 +35,18 @@ app.use(compression());
 
 // ---- Observability --------------------------------------------------
 if (config.env !== "test") {
-  app.use(morgan("dev"));
+  app.use((req, res, next) => {
+    const start = process.hrtime.bigint();
+    res.on("finish", () => {
+      logger.info("http_request", {
+        method: req.method,
+        path: req.path,
+        statusCode: res.statusCode,
+        durationMs: Number(process.hrtime.bigint() - start) / 1e6,
+      });
+    });
+    next();
+  });
 }
 app.use(metricsMiddleware);
 

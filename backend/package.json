@@ -4,7 +4,7 @@
   "description": "PulseMarket REST API - Node.js + Express + PostgreSQL + Redis",
   "main": "src/server.js",
   "engines": {
-    "node": ">=20"
+    "node": ">=20.6"
   },
   "scripts": {
     "start": "node src/server.js",
@@ -27,6 +27,13 @@
   ],
   "license": "MIT",
   "dependencies": {
+    "@opentelemetry/api": "^1.9.0",
+    "@opentelemetry/api-logs": "^0.200.0",
+    "@opentelemetry/exporter-logs-otlp-http": "^0.200.0",
+    "@opentelemetry/exporter-metrics-otlp-http": "^0.200.0",
+    "@opentelemetry/resources": "^2.0.0",
+    "@opentelemetry/sdk-logs": "^0.200.0",
+    "@opentelemetry/sdk-metrics": "^2.0.0",
     "bcryptjs": "^2.4.3",
     "cloudinary": "^2.11.0",
     "compression": "^1.7.4",
@@ -36,7 +43,6 @@
     "express-rate-limit": "^7.4.1",
     "helmet": "^8.0.0",
     "jsonwebtoken": "^9.0.2",
-    "morgan": "^1.10.0",
     "multer": "^2.5.0",
     "pg": "^8.13.1",
     "redis": "^4.7.0",

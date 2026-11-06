@@ -1,10 +1,35 @@
 /**
- * Dependency-free metrics registry.
+ * Prometheus-format metrics for /metrics plus OpenTelemetry metrics for Grafana Cloud.
  *
- * Exposes a Prometheus text-format payload at GET /metrics so the later
- * Prometheus + Grafana phase can scrape the API with zero changes.
- * (A full prom-client integration can replace this file later.)
+ * The small in-process registry keeps /metrics available without requiring
+ * an external collector in local development.
  */
+const { metrics } = require("@opentelemetry/api");
+
+const meter = metrics.getMeter("pulsemarket-api");
+const requestCounter = meter.createCounter("pulsemarket_http_requests_total", {
+  description: "Total HTTP requests handled by PulseMarket.",
+});
+const serverErrorCounter = meter.createCounter("pulsemarket_http_requests_errors_total", {
+  description: "Total HTTP requests that returned a 5xx response.",
+});
+const requestDuration = meter.createHistogram("pulsemarket_http_request_duration_ms", {
+  description: "HTTP request duration in milliseconds.",
+  unit: "ms",
+});
+meter.createObservableGauge("pulsemarket_process_uptime_seconds", {
+  description: "Process uptime in seconds.",
+  unit: "s",
+}).addCallback((result) => result.observe(process.uptime()));
+meter.createObservableGauge("pulsemarket_process_resident_memory_bytes", {
+  description: "Resident memory size in bytes.",
+  unit: "By",
+}).addCallback((result) => result.observe(process.memoryUsage().rss));
+meter.createObservableGauge("pulsemarket_nodejs_heap_used_bytes", {
+  description: "Node.js heap used in bytes.",
+  unit: "By",
+}).addCallback((result) => result.observe(process.memoryUsage().heapUsed));
+
 const counters = {
   http_requests_total: 0,
   http_requests_errors_total: 0,
@@ -12,9 +37,12 @@ const counters = {
 const durations = []; // simple ring buffer of recent request durations (ms)
 const MAX_SAMPLES = 1000;
 
-function observeRequest(durationMs, statusCode) {
+function observeRequest(durationMs, statusCode, attributes) {
   counters.http_requests_total += 1;
   if (statusCode >= 500) counters.http_requests_errors_total += 1;
+  requestCounter.add(1, attributes);
+  if (statusCode >= 500) serverErrorCounter.add(1, attributes);
+  requestDuration.record(durationMs, attributes);
   durations.push(durationMs);
   if (durations.length > MAX_SAMPLES) durations.shift();
 }
@@ -56,7 +84,12 @@ function metricsMiddleware(req, res, next) {
   const start = process.hrtime.bigint();
   res.on("finish", () => {
     const durationMs = Number(process.hrtime.bigint() - start) / 1e6;
-    observeRequest(durationMs, res.statusCode);
+    const route = req.route ? `${req.baseUrl}${req.route.path}` : "unmatched";
+    observeRequest(durationMs, res.statusCode, {
+      method: req.method,
+      route,
+      status_code: res.statusCode,
+    });
   });
   next();
 }

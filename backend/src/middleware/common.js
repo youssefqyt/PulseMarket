@@ -36,9 +36,9 @@ function errorHandler(err, req, res, _next) {
   const isServerError = statusCode >= 500;
 
   if (isServerError) {
-    logger.error(err.message, { path: req.originalUrl, stack: err.stack });
+    logger.error(err.message, { path: req.path, stack: err.stack });
   } else {
-    logger.debug(err.message, { path: req.originalUrl, statusCode });
+    logger.debug(err.message, { path: req.path, statusCode });
   }
 
   res.status(statusCode).json({
